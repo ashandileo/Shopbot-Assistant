@@ -148,9 +148,9 @@ export async function POST(request: NextRequest) {
       .eq("id", conversation.id);
 
     // Send reply via WhatsApp Cloud API
-    await sendWhatsAppMessage(phoneNumberId, from, aiResponse);
+    const sendResult = await sendWhatsAppMessage(phoneNumberId, from, aiResponse);
 
-    return Response.json({ status: "ok", reply: aiResponse });
+    return Response.json({ status: "ok", reply: aiResponse, whatsapp: sendResult });
   } catch (error) {
     console.error("Webhook error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -163,26 +163,29 @@ async function sendWhatsAppMessage(
   to: string,
   text: string,
 ) {
-  const response = await fetch(
-    `${GRAPH_API_URL}/${phoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body: text },
-      }),
+  const url = `${GRAPH_API_URL}/${phoneNumberId}/messages`;
+  const payload = {
+    messaging_product: "whatsapp",
+    to,
+    type: "text",
+    text: { body: text },
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify(payload),
+  });
+
+  const result = await response.json();
 
   if (!response.ok) {
-    const err = await response.text();
-    console.error("WhatsApp send error:", err);
-    throw new Error(`WhatsApp API error: ${response.status}`);
+    console.error("WhatsApp send error:", result);
+    return { success: false, error: result, url, to, phoneNumberId };
   }
+
+  return { success: true, result };
 }
