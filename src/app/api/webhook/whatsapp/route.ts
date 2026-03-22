@@ -47,15 +47,18 @@ export async function POST(request: NextRequest) {
 
     // Resolve which user owns this bot
     // For MVP: use the first user that has persona_settings configured
-    const { data: persona } = await supabase
+    const { data: persona, error: personaError } = await supabase
       .from("persona_settings")
       .select("user_id")
       .limit(1)
       .single();
 
     if (!persona) {
-      await sendWhatsAppMessage(phoneNumberId, from, "Sorry, this service is not configured yet.");
-      return Response.json({ status: "ok" });
+      return Response.json({
+        status: "error",
+        step: "persona",
+        detail: personaError?.message ?? "No persona found",
+      });
     }
 
     const userId = persona.user_id;
@@ -70,25 +73,43 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!conversation) {
-      const { data: newConvo } = await supabase
+      const { data: newConvo, error: convoError } = await supabase
         .from("conversations")
         .insert({ user_id: userId, phone: senderPhone })
         .select("id")
         .single();
+      if (convoError) {
+        return Response.json({
+          status: "error",
+          step: "create_conversation",
+          detail: convoError.message,
+        });
+      }
       conversation = newConvo;
     }
 
     if (!conversation) {
-      await sendWhatsAppMessage(phoneNumberId, from, "Sorry, something went wrong. Please try again.");
-      return Response.json({ status: "ok" });
+      return Response.json({
+        status: "error",
+        step: "conversation",
+        detail: "Failed to find or create conversation",
+      });
     }
 
     // Save incoming message
-    await supabase.from("messages").insert({
+    const { error: msgError } = await supabase.from("messages").insert({
       conversation_id: conversation.id,
       role: "user",
       body,
     });
+
+    if (msgError) {
+      return Response.json({
+        status: "error",
+        step: "save_message",
+        detail: msgError.message,
+      });
+    }
 
     // Load recent message history for context
     const { data: recentMessages } = await supabase
@@ -129,10 +150,11 @@ export async function POST(request: NextRequest) {
     // Send reply via WhatsApp Cloud API
     await sendWhatsAppMessage(phoneNumberId, from, aiResponse);
 
-    return Response.json({ status: "ok" });
+    return Response.json({ status: "ok", reply: aiResponse });
   } catch (error) {
     console.error("Webhook error:", error);
-    return Response.json({ status: "error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return Response.json({ status: "error", step: "catch", detail: message }, { status: 500 });
   }
 }
 
