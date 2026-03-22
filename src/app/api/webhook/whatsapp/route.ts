@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateChatResponse } from "@/lib/chat";
 
-const GRAPH_API_URL = "https://graph.facebook.com/v21.0";
+const GRAPH_API_URL = "https://graph.facebook.com/v22.0";
 
 // Webhook verification (GET) — Meta sends this when you register the webhook
 export async function GET(request: NextRequest) {
