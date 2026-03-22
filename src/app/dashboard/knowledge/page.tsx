@@ -26,6 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
+import { addProduct as addProductAction, addFaq as addFaqAction } from "./actions";
 import type { Product, Faq } from "@/lib/types";
 
 const supabase = createClient();
@@ -78,17 +79,13 @@ export default function KnowledgePage() {
 
   const addProductMutation = useMutation({
     mutationFn: async (product: { name: string; price: string; stock: string }) => {
-      const { data, error } = await supabase
-        .from("products")
-        .insert({
-          name: product.name,
-          price: parseFloat(product.price),
-          stock: parseInt(product.stock) || 0,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Product;
+      const result = await addProductAction({
+        name: product.name,
+        price: parseFloat(product.price),
+        stock: parseInt(product.stock) || 0,
+      });
+      if (result.error) throw new Error(result.error);
+      return result.data!;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -119,13 +116,12 @@ export default function KnowledgePage() {
 
   const addFaqMutation = useMutation({
     mutationFn: async (faq: { q: string; a: string }) => {
-      const { data, error } = await supabase
-        .from("faqs")
-        .insert({ question: faq.q, answer: faq.a })
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Faq;
+      const result = await addFaqAction({
+        question: faq.q,
+        answer: faq.a,
+      });
+      if (result.error) throw new Error(result.error);
+      return result.data!;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["faqs"] });
