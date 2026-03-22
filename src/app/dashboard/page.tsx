@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import {
   MessageSquare,
@@ -6,7 +5,8 @@ import {
   Package,
   HelpCircle,
 } from "lucide-react";
-import Link from "next/link";
+import StatsGrid from "./_components/Contents/StatsGrid";
+import ConversationRecentList from "./_components/Contents/ConversationRecentList";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -117,58 +117,11 @@ export default async function DashboardPage() {
         Overview of your AI assistant activity
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-        {stats.map((stat) => (
-          <Link key={stat.label} href={stat.href}>
-            <Card className="hover:border-muted-foreground/30 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </div>
-                <p className="text-2xl font-semibold">{stat.value}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      <h2 className="text-sm font-semibold mb-3">Recent conversations</h2>
-      {recentConversations.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-sm text-muted-foreground">
-            <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-30" />
-            <p>No conversations yet.</p>
-            <p className="text-xs mt-1">
-              Messages will appear here once customers start chatting via
-              WhatsApp.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {recentConversations.map((convo) => (
-            <Link
-              key={convo.id}
-              href="/dashboard/conversations"
-            >
-              <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer overflow-hidden">
-                <CardContent className="p-4 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold truncate">{convo.phone}</span>
-                    <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                      {formatTime(convo.last_message_at)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {convo.preview}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+      <StatsGrid stats={stats} />
+      <ConversationRecentList
+        conversations={recentConversations}
+        formatTime={formatTime}
+      />
     </div>
   );
 }
