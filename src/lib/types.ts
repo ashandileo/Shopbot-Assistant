@@ -28,3 +28,19 @@ export type PersonaSetting = {
   welcome_message: string;
   updated_at: string;
 };
+
+export type Conversation = {
+  id: string;
+  user_id: string;
+  phone: string;
+  last_message_at: string;
+  created_at: string;
+};
+
+export type Message = {
+  id: string;
+  conversation_id: string;
+  role: "user" | "bot";
+  body: string;
+  created_at: string;
+};

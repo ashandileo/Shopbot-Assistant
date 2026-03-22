@@ -34,6 +34,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       faqs: {
         Row: {
           answer: string
@@ -63,6 +87,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       persona_settings: {
         Row: {
@@ -132,7 +188,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_faqs: {
+        Args: {
+          filter_user_id?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          answer: string
+          id: string
+          question: string
+          similarity: number
+        }[]
+      }
+      match_products: {
+        Args: {
+          filter_user_id?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          id: string
+          name: string
+          price: number
+          similarity: number
+          stock: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

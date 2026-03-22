@@ -1,6 +1,9 @@
 -- Enable pgvector extension for embedding columns (RAG)
 create extension if not exists vector with schema extensions;
 
+-- Make sure the vector type is accessible without schema prefix
+set search_path to public, extensions;
+
 -- ============================================================
 -- PRODUCTS
 -- ============================================================
