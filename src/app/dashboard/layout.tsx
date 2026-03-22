@@ -24,11 +24,11 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <AppSidebar user={{ email: user.email ?? "" }} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 overflow-x-hidden">
         <header className="flex h-12 items-center gap-2 border-b px-4 md:hidden">
           <SidebarTrigger />
         </header>
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">{children}</main>
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6 md:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
