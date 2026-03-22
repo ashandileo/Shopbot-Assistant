@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Bot, Eye, EyeOff, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,27 +11,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { login } from "./actions";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Simulated login — replace with actual API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const formData = new FormData(e.currentTarget);
+    const result = await login(formData);
 
-    if (email === "admin@admin.com" && password === "admin123") {
-      router.push("/dashboard");
-    } else {
-      setError("Invalid email or password");
+    if (result?.error) {
+      setError(result.error);
       setIsLoading(false);
     }
   };
@@ -45,9 +40,7 @@ export default function LoginPage() {
           <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Bot className="size-6" />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            AI Assistant
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight">AI Assistant</h1>
           <p className="text-sm text-muted-foreground">Admin Panel</p>
         </div>
 
@@ -78,10 +71,9 @@ export default function LoginPage() {
                 </label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
-                  placeholder="admin@admin.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user1@example.com"
                   required
                   autoComplete="email"
                   disabled={isLoading}
@@ -99,10 +91,9 @@ export default function LoginPage() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
                     disabled={isLoading}
