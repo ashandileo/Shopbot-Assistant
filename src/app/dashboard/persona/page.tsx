@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,16 +13,82 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createClient } from "@/lib/supabase/client";
+import type { PersonaSetting } from "@/lib/types";
+
+const supabase = createClient();
+
+const defaults = {
+  bot_name: "ShopBot Assistant",
+  tone: "friendly",
+  system_prompt:
+    "You are ShopBot, a friendly and helpful assistant for our store. Answer customer questions about products, pricing, stock availability, and store info. Keep responses concise and helpful. If you don't know the answer, direct the customer to call us at (415) 555-0100. Do not answer questions unrelated to our store.",
+  welcome_message:
+    "Hi there! Welcome to our store. How can I help you today? Feel free to ask about products, prices, or availability.",
+};
 
 export default function PersonaPage() {
-  const [botName, setBotName] = useState("ShopBot Assistant");
-  const [tone, setTone] = useState("friendly");
-  const [systemPrompt, setSystemPrompt] = useState(
-    "You are ShopBot, a friendly and helpful assistant for our store. Answer customer questions about products, pricing, stock availability, and store info. Keep responses concise and helpful. If you don't know the answer, direct the customer to call us at (415) 555-0100. Do not answer questions unrelated to our store."
-  );
-  const [welcomeMessage, setWelcomeMessage] = useState(
-    "Hi there! Welcome to our store. How can I help you today? Feel free to ask about products, prices, or availability."
-  );
+  const queryClient = useQueryClient();
+
+  const [saved, setSaved] = useState(false);
+  const [botName, setBotName] = useState(defaults.bot_name);
+  const [tone, setTone] = useState(defaults.tone);
+  const [systemPrompt, setSystemPrompt] = useState(defaults.system_prompt);
+  const [welcomeMessage, setWelcomeMessage] = useState(defaults.welcome_message);
+
+  const { data: persona, isLoading } = useQuery({
+    queryKey: ["persona"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("persona_settings")
+        .select("*")
+        .single<PersonaSetting>();
+      if (data) {
+        setBotName(data.bot_name);
+        setTone(data.tone);
+        setSystemPrompt(data.system_prompt);
+        setWelcomeMessage(data.welcome_message);
+      }
+      return data;
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        bot_name: botName,
+        tone,
+        system_prompt: systemPrompt,
+        welcome_message: welcomeMessage,
+      };
+
+      if (persona?.id) {
+        const { error } = await supabase
+          .from("persona_settings")
+          .update(payload)
+          .eq("id", persona.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("persona_settings")
+          .insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["persona"] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl">
@@ -74,7 +142,14 @@ export default function PersonaPage() {
           />
         </div>
 
-        <Button>Save changes</Button>
+        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : saved ? (
+            <Check className="h-4 w-4 mr-1" />
+          ) : null}
+          {saved ? "Saved" : "Save changes"}
+        </Button>
       </div>
     </div>
   );
